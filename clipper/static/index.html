@@ -1,0 +1,643 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>B3 Clips</title>
+<style>
+  :root { --bg:#111317; --panel:#1a1d23; --line:#2a2e36; --text:#e8eaed; --muted:#9aa0a8; --accent:#ffe600; --ok:#3ecf8e; --bad:#ff6b6b; --warn:#ffc857; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:15px/1.5 system-ui, Segoe UI, sans-serif; }
+  header { display:flex; align-items:center; gap:24px; padding:12px 20px; border-bottom:1px solid var(--line); }
+  header h1 { margin:0; font-size:18px; letter-spacing:.5px; }
+  header h1 span { color:var(--accent); }
+  nav button { background:none; border:0; color:var(--muted); font:inherit; padding:6px 10px; cursor:pointer; border-radius:6px; }
+  nav button.on { color:var(--text); background:var(--panel); }
+  main { display:grid; grid-template-columns:260px 1fr; min-height:calc(100vh - 53px); }
+  aside { border-right:1px solid var(--line); padding:12px; overflow:auto; }
+  aside .job { padding:8px 10px; border-radius:8px; cursor:pointer; margin-bottom:4px; }
+  aside .job:hover, aside .job.on { background:var(--panel); }
+  aside .job small { color:var(--muted); display:block; }
+  aside .job { position:relative; padding-right:30px; }
+  aside .job .del { position:absolute; top:6px; right:6px; border:0; background:none; color:var(--muted); font-size:16px;
+    line-height:1; padding:3px 6px; border-radius:5px; cursor:pointer; opacity:0; }
+  aside .job:hover .del, aside .job .del.sure { opacity:1; }
+  aside .job .del:hover { background:#3a2020; color:var(--bad); }
+  aside .job .del.sure { color:#fff; background:var(--bad); font-size:12px; }
+  button.btn.sure { background:var(--bad); color:#fff; }
+  section { padding:20px 28px; max-width:1150px; }
+  .panel { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:16px; margin-bottom:16px; }
+  .rights { border-color:#5a4d00; background:#221f0d; }
+  label { display:block; color:var(--muted); font-size:13px; margin:10px 0 4px; }
+  input[type=text], input[type=password], input[type=number], input[type=date], select, textarea { width:100%; padding:9px 10px; background:#0d0f12; color:var(--text); border:1px solid var(--line); border-radius:7px; font:inherit; }
+  textarea { min-height:90px; resize:vertical; font-size:14px; }
+  input[type=number] { width:110px; }
+  .row { display:flex; gap:12px; align-items:end; flex-wrap:wrap; }
+  .row > div { min-width:0; }
+  .grow { flex:1; min-width:180px; }
+  .check { display:flex; gap:10px; align-items:flex-start; color:var(--text); font-size:14px; }
+  .check input { margin-top:4px; }
+  button.btn { background:var(--accent); color:#111; border:0; padding:9px 16px; border-radius:7px; font:600 14px system-ui; cursor:pointer; white-space:nowrap; }
+  button.btn.sec { background:#2b3038; color:var(--text); }
+  button.btn.small { padding:5px 10px; font-size:13px; }
+  button.btn:disabled { opacity:.4; cursor:default; }
+  .muted { color:var(--muted); }
+  .err { color:var(--bad); white-space:pre-wrap; }
+  .warn { color:var(--warn); white-space:pre-wrap; }
+  .okc { color:var(--ok); }
+  .bar { height:6px; background:#0d0f12; border-radius:3px; overflow:hidden; margin-top:8px; }
+  .bar div { height:100%; background:var(--accent); transition:width .5s; }
+  video.src { width:100%; max-height:420px; background:#000; border-radius:8px; }
+  .cand { display:grid; grid-template-columns:70px 1fr; gap:14px; }
+  .score { font-size:26px; font-weight:800; color:var(--accent); text-align:center; }
+  .score small { display:block; font-size:11px; color:var(--muted); font-weight:400; }
+  .subs { display:flex; gap:10px; flex-wrap:wrap; font-size:12px; color:var(--muted); margin:2px 0 6px; }
+  .subs b { color:var(--text); }
+  .clips { display:flex; gap:18px; flex-wrap:wrap; }
+  .clip { width:300px; }
+  .clip video { width:300px; aspect-ratio:9/16; background:#000; border-radius:8px; }
+  .checks { list-style:none; padding:0; margin:8px 0; font-size:13px; }
+  .checks li { padding:2px 0; }
+  .p { color:var(--ok); } .f { color:var(--bad); } .u { color:var(--warn); }
+  details summary { cursor:pointer; color:var(--muted); font-size:14px; }
+  a { color:var(--accent); }
+  .hide { display:none !important; }
+  @media (max-width:800px) { main { grid-template-columns:1fr; } aside { border-right:0; border-bottom:1px solid var(--line); max-height:180px; } section { padding:16px; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>B3 <span>Clips</span></h1>
+  <nav>
+    <button data-view="new" class="on">New clip</button>
+    <button data-view="settings">Settings</button>
+    <button data-view="about">About</button>
+  </nav>
+  <div style="margin-left:auto" class="row">
+    <span id="quitMsg" class="muted" style="font-size:13px"></span>
+    <button class="btn sec small" id="quitBtn" title="Stop B3 Clips now">Quit B3 Clips</button>
+  </div>
+</header>
+<main>
+  <aside>
+    <div class="muted" style="font-size:12px;margin:4px 6px 8px">JOBS</div>
+    <div id="jobList"></div>
+  </aside>
+
+  <section>
+    <!-- NEW -->
+    <div id="view-new">
+      <div class="panel rights">
+        <b>Only clip footage you have the right to use:</b>
+        <ul style="margin:6px 0 0;padding-left:20px">
+          <li><b>Your own videos</b></li>
+          <li><b>Creative Commons (CC-BY)</b> videos: allowed if you credit the creator (name + link in your post)</li>
+          <li><b>Campaign footage</b> (Vyro, Whop...) that the campaign lets you clip</li>
+        </ul>
+        <div class="muted" style="margin-top:6px">Anything else is someone else's video: downloading and reposting it breaks YouTube's terms and risks strikes.</div>
+      </div>
+      <div class="panel">
+        <label>YouTube link or a local video file path</label>
+        <input type="text" id="inp" placeholder="https://youtu.be/...   or   D:\videos\my-video.mp4">
+        <label class="check" style="margin-top:14px"><input type="checkbox" id="rights">
+          <span>I have the right to use this footage (my own, CC-BY with credit, or a campaign that allows clipping).</span></label>
+        <div style="margin-top:14px"><button class="btn" id="startBtn">Find clips</button>
+          <span id="newErr" class="err"></span></div>
+        <div class="row" style="margin-top:12px"><div><label style="margin-top:0">AI for finding moments</label>
+          <select class="provSwitch" style="width:auto;min-width:260px"></select></div></div>
+      </div>
+    </div>
+
+    <!-- JOB -->
+    <div id="view-job" class="hide">
+      <div class="panel">
+        <div class="row" style="justify-content:space-between;align-items:flex-start;flex-wrap:nowrap">
+          <h2 id="jTitle" style="margin:0 0 4px;font-size:18px"></h2>
+          <button class="btn sec small" id="jDelete" title="Delete this job, its download and its clips">Delete job</button>
+        </div>
+        <div class="muted" id="jMeta"></div>
+        <div id="jStage" style="margin-top:10px"></div>
+        <div class="bar" id="jBarWrap"><div id="jBar" style="width:0"></div></div>
+        <div id="jErr" class="err"></div>
+        <div id="jWarn" class="warn"></div>
+      </div>
+
+      <div class="panel hide" id="playerPanel">
+        <video class="src" id="player" controls preload="metadata"></video>
+        <div class="muted" style="font-size:13px;margin-top:6px">Preview plays the moment in the original video. Adjust start/end, then make the clip.</div>
+      </div>
+
+      <details class="panel" id="campPanel">
+        <summary>Campaign rules (optional): paste the brief's requirements to get a checklist per clip</summary>
+        <div class="row">
+          <div class="grow"><label>Campaign name</label><input type="text" id="cpName" placeholder="e.g. Vyro - creator campaign"></div>
+          <div><label>Deadline</label><input type="date" id="cpDeadline"></div>
+          <div><label>Min length (s)</label><input type="number" id="cpMin"></div>
+          <div><label>Max length (s)</label><input type="number" id="cpMax"></div>
+        </div>
+        <div class="row">
+          <div class="grow"><label>Required hashtags (space separated)</label><input type="text" id="cpTags" placeholder="#ad #sponsored"></div>
+          <div class="grow"><label>Required @mentions</label><input type="text" id="cpMentions" placeholder="@creator"></div>
+        </div>
+        <div class="row">
+          <div class="grow"><label>Required phrase in the post</label><input type="text" id="cpPhrase" placeholder="e.g. Paid partnership with ..."></div>
+          <div class="grow"><label>Platforms allowed</label><input type="text" id="cpPlatforms" placeholder="TikTok, YouTube Shorts, Instagram"></div>
+        </div>
+        <label>Credit line (for CC-BY videos, or if the brief asks for one)</label>
+        <input type="text" id="cpCredit" placeholder="Source: Channel name - https://youtube.com/...">
+        <div style="margin-top:12px"><button class="btn sec" id="cpSave">Save rules</button> <span id="cpMsg"></span></div>
+      </details>
+
+      <div id="candWrap" class="hide">
+        <div class="panel">
+          <h2 style="margin:0 0 4px;font-size:16px">Clip options</h2>
+          <div class="row">
+            <div class="grow"><label>Framing</label><select id="oLayout"></select></div>
+            <div class="grow"><label>Caption style</label><select id="oPreset"></select></div>
+            <div><label>Caption position</label><select id="oPos"></select></div>
+          </div>
+          <div class="row" style="margin-top:10px">
+            <label class="check"><input type="checkbox" id="oCaps" checked><span>Burn in captions</span></label>
+            <label class="check"><input type="checkbox" id="oHook" checked><span>Show hook title for the first 4 s</span></label>
+          </div>
+        </div>
+        <div class="row" style="justify-content:space-between;margin-bottom:10px">
+          <h2 style="margin:0;font-size:16px">Suggested moments <span class="muted" id="method"></span></h2>
+          <div class="row"><select class="provSwitch" style="width:auto;min-width:220px" title="AI provider"></select>
+            <button class="btn sec" id="repickBtn">Find again with this AI</button></div>
+        </div>
+        <div id="cands"></div>
+        <div class="panel">
+          <h3 style="margin:0 0 6px;font-size:15px">Custom moment</h3>
+          <div class="row">
+            <div><label>Start (s)</label><input type="number" step="0.1" id="cStart"></div>
+            <div><label>End (s)</label><input type="number" step="0.1" id="cEnd"></div>
+            <div class="grow"><label>Hook title</label><input type="text" id="cTitle"></div>
+            <button class="btn sec" id="cPrev">Preview</button>
+            <button class="btn" id="cMake">Make clip</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="clipWrap" class="panel hide">
+        <div class="row" style="justify-content:space-between;margin-bottom:10px">
+          <h2 style="margin:0;font-size:16px">Your clips: watch each one fully before posting</h2>
+          <button class="btn sec" id="openFolder">Open folder</button>
+        </div>
+        <div class="clips" id="clips"></div>
+      </div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div id="view-settings" class="hide">
+      <div class="panel">
+        <div class="row" style="justify-content:space-between">
+          <div><h2 style="margin:0 0 4px;font-size:16px">AI providers (find the moments)</h2>
+            <div class="muted" style="font-size:13px">Save each provider once; click <b>Use</b> to switch. Its key, URL and models load automatically.</div></div>
+          <button class="btn" id="addProv">+ Add provider</button>
+        </div>
+        <div id="provList" style="margin-top:12px"></div>
+        <label class="check" style="margin-top:10px"><input type="checkbox" id="sFallback">
+          <span>If the active provider fails or runs out of free quota, try my other providers automatically</span></label>
+      </div>
+
+      <div class="panel hide" id="provForm">
+        <h2 style="margin:0 0 4px;font-size:16px" id="pfTitle">Add provider</h2>
+        <div class="row">
+          <div class="grow"><label>Type</label><select id="pfType"></select></div>
+          <div class="grow"><label>Name (shown in the switcher)</label><input type="text" id="pfName"></div>
+        </div>
+        <div id="pfHelp" class="muted" style="font-size:13px;margin-top:8px"></div>
+        <label>Base URL</label><input type="text" id="pfUrl">
+        <label>API key <span id="pfKeyState" class="muted"></span></label>
+        <input type="password" id="pfKey" placeholder="paste key" autocomplete="off">
+        <label class="check hide" id="pfClearWrap" style="margin-top:8px"><input type="checkbox" id="pfClear"><span>Remove saved key</span></label>
+        <label>Model(s): comma-separated, tried in order when one is busy or retired</label>
+        <div class="row"><div class="grow"><input type="text" id="pfModel"></div>
+          <button class="btn sec" id="pfList">List available models</button></div>
+        <div id="pfModels" class="muted" style="font-size:12px;margin-top:6px;max-height:160px;overflow:auto"></div>
+        <div class="row" style="margin-top:14px">
+          <button class="btn" id="pfSave">Save provider</button>
+          <button class="btn sec" id="pfCancel">Cancel</button>
+          <span id="pfMsg"></span>
+        </div>
+      </div>
+      <div class="panel">
+        <h2 style="margin:0 0 4px;font-size:16px">Processing</h2>
+        <label>Transcription model (bigger = more accurate, slower on CPU)</label>
+        <select id="sWhisper">
+          <option value="base.en">base.en (fast, English)</option>
+          <option value="small.en">small.en (balanced, English)</option>
+          <option value="medium.en">medium.en (accurate, slow, English)</option>
+          <option value="small">small (any language)</option>
+          <option value="medium">medium (any language, slow)</option>
+        </select>
+        <div class="row">
+          <div><label>Suggestions</label><select id="sMax" style="width:auto">
+            <option value="0">Auto: every strong moment</option>
+            <option value="3">3</option><option value="5">5</option><option value="8">8</option>
+            <option value="10">10</option><option value="15">15</option><option value="20">20</option></select></div>
+          <div id="sScoreWrap"><label>Minimum score (auto)</label><input type="number" id="sScore" min="0" max="100" step="5"></div>
+          <div><label>Min clip (s)</label><input type="number" id="sMin" min="5"></div>
+          <div><label>Max clip (s)</label><input type="number" id="sMaxLen" max="180"></div>
+        </div>
+      </div>
+      <div class="row">
+        <button class="btn" id="saveBtn">Save processing settings</button>
+        <span id="sMsg"></span>
+      </div>
+    </div>
+
+    <!-- ABOUT -->
+    <div id="view-about" class="hide">
+      <div class="panel">
+        <h2 style="margin:0 0 8px;font-size:16px">About B3 Clips</h2>
+        <p class="muted" style="margin-top:0">by Beyond Three</p>
+        <p>A local tool that turns long videos into vertical clips with captions. Nothing is uploaded: you review and post every clip yourself.</p>
+        <p><b>Credits.</b> Built with yt-dlp, ffmpeg, faster-whisper, OpenCV and the YuNet face model (opencv_zoo, MIT).
+          Moment-picking rules adapted from <a href="https://github.com/Anil-matcha/AI-Youtube-Shorts-Generator" target="_blank">AI-Youtube-Shorts-Generator</a> (MIT)
+          and <a href="https://github.com/mutonby/openshorts" target="_blank">OpenShorts</a> (MIT).
+          Reframing, caption and selection ideas inspired by OpenShorts,
+          <a href="https://github.com/FujiwaraChoki/supoclip" target="_blank">SupoClip</a> (<a href="https://www.supoclip.com/" target="_blank">supoclip.com</a>)
+          and <a href="https://github.com/ColinGPT9/clips-studio" target="_blank">Clips Studio</a>; no code was copied from the last two.
+          Full notices: THIRD_PARTY_NOTICES.md.</p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmt = t => { t = Math.max(0, +t || 0); const m = Math.floor(t / 60), s = (t % 60).toFixed(1).padStart(4, "0"); return `${m}:${s}`; };
+async function api(path, opts = {}) {
+  const r = await fetch(path, { headers: { "Content-Type": "application/json" }, ...opts });
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(typeof data.detail === "string" ? data.detail : JSON.stringify(data.detail || r.statusText));
+  return data;
+}
+const LS = { get(k, d) { try { return localStorage.getItem(k) ?? d; } catch { return d; } }, set(k, v) { try { localStorage.setItem(k, v); } catch {} } };
+
+let presets = {}, settings = {}, currentJob = null, pollTimer = null, stopAt = null, srcLoaded = null, jobData = null, opts = null;
+
+function show(view) {
+  for (const v of ["new", "job", "settings", "about"]) $("view-" + v).classList.toggle("hide", v !== view);
+  document.querySelectorAll("nav button").forEach(b => b.classList.toggle("on", b.dataset.view === view));
+  if (view !== "job") { currentJob = null; renderJobList(); }
+}
+document.querySelectorAll("nav button").forEach(b => b.onclick = () => show(b.dataset.view));
+
+// ---------- options ----------
+async function loadOptions() {
+  opts = await api("/api/options");
+  const fill = (sel, obj, key, def) => { $(sel).innerHTML = Object.entries(obj).map(([k, v]) => `<option value="${k}">${esc(v)}</option>`).join("");
+    $(sel).value = LS.get(key, def); $(sel).onchange = () => LS.set(key, $(sel).value); };
+  fill("oLayout", opts.layouts, "clipper.layout", "auto");
+  fill("oPreset", opts.presets, "clipper.preset", "classic");
+  fill("oPos", opts.positions, "clipper.pos", "low");
+  $("oCaps").checked = LS.get("clipper.caps", "1") === "1"; $("oCaps").onchange = () => LS.set("clipper.caps", $("oCaps").checked ? "1" : "0");
+  $("oHook").checked = LS.get("clipper.hook", "1") === "1"; $("oHook").onchange = () => LS.set("clipper.hook", $("oHook").checked ? "1" : "0");
+}
+
+// ---------- jobs list ----------
+let jobsCache = [];
+async function loadJobs() { jobsCache = await api("/api/jobs"); renderJobList(); }
+function renderJobList() {
+  $("jobList").innerHTML = jobsCache.map(j => `<div class="job ${currentJob === j.id ? "on" : ""}" data-id="${esc(j.id)}">
+    ${esc((j.meta && j.meta.title) || "Starting...")}<small>${esc(j.status)} · ${new Date(j.created * 1000).toLocaleString()}</small>
+    <button class="del" data-del="${esc(j.id)}" title="Delete this job">×</button></div>`).join("")
+    || `<div class="muted" style="padding:6px">No jobs yet</div>`;
+  document.querySelectorAll("#jobList .job").forEach(d => d.onclick = () => openJob(d.dataset.id));
+  document.querySelectorAll("#jobList .del").forEach(b => b.onclick = ev => { ev.stopPropagation(); askDelete(b.dataset.del, b, "×"); });
+}
+
+// Two clicks to delete: the first arms the button, the second deletes (no browser pop-ups).
+async function askDelete(id, btn, label) {
+  if (!btn.classList.contains("sure")) {
+    btn.classList.add("sure"); btn.textContent = "Delete?";
+    setTimeout(() => { if (btn.isConnected) { btn.classList.remove("sure"); btn.textContent = label; } }, 4000);
+    return;
+  }
+  if (currentJob === id) {           // release the preview video so Windows lets us delete the file
+    clearTimeout(pollTimer); const p = $("player"); p.pause(); p.removeAttribute("src"); p.load();
+    document.querySelectorAll("#clips video").forEach(v => { v.removeAttribute("src"); v.load(); });
+  }
+  try {
+    await api(`/api/jobs/${id}`, { method: "DELETE" });
+  } catch (e) {
+    btn.classList.remove("sure"); btn.textContent = label;
+    if (currentJob === id) { $("jErr").textContent = e.message; srcLoaded = null; refreshJob(); }
+    else { $("quitMsg").textContent = e.message; setTimeout(() => $("quitMsg").textContent = "", 6000); }
+    return;
+  }
+  if (currentJob === id) show("new");
+  await loadJobs();
+}
+
+// ---------- new job ----------
+$("startBtn").onclick = async () => {
+  $("newErr").textContent = "";
+  try {
+    const j = await api("/api/jobs", { method: "POST", body: JSON.stringify({ input: $("inp").value, rights_confirmed: $("rights").checked }) });
+    $("inp").value = ""; $("rights").checked = false;
+    await loadJobs(); openJob(j.id);
+  } catch (e) { $("newErr").textContent = " " + e.message; }
+};
+
+// ---------- campaign ----------
+const camp = () => (jobData && jobData.campaign) || {};
+function fillCampaign() {
+  const c = camp();
+  $("cpName").value = c.name || ""; $("cpDeadline").value = c.deadline || ""; $("cpMin").value = c.min_sec ?? ""; $("cpMax").value = c.max_sec ?? "";
+  $("cpTags").value = c.hashtags || ""; $("cpMentions").value = c.mentions || ""; $("cpPhrase").value = c.phrase || "";
+  $("cpPlatforms").value = c.platforms || ""; $("cpCredit").value = c.credit || "";
+}
+$("cpSave").onclick = async () => {
+  const body = { name: $("cpName").value, deadline: $("cpDeadline").value, min_sec: $("cpMin").value === "" ? null : +$("cpMin").value,
+    max_sec: $("cpMax").value === "" ? null : +$("cpMax").value, hashtags: $("cpTags").value, mentions: $("cpMentions").value,
+    phrase: $("cpPhrase").value, platforms: $("cpPlatforms").value, credit: $("cpCredit").value };
+  try { jobData.campaign = await api(`/api/jobs/${currentJob}/campaign`, { method: "POST", body: JSON.stringify(body) });
+    $("cpMsg").innerHTML = '<span class="okc">Saved</span>'; $("clips").dataset.sig = ""; refreshJob(); }
+  catch (e) { $("cpMsg").innerHTML = `<span class="err">${esc(e.message)}</span>`; }
+};
+const words = s => (s || "").split(/[\s,]+/).map(x => x.trim()).filter(Boolean);
+function postTextFor(c) {
+  const k = camp();
+  const tags = [...new Set([...(c.hashtags || []), ...words(k.hashtags)])];
+  const parts = [c.post_title, c.post_description, k.phrase, words(k.mentions).join(" "), tags.join(" "), k.credit].filter(x => x && x.trim());
+  return parts.join("\n");
+}
+function checklist(clip) {
+  const k = camp(), out = [], len = clip.end - clip.start, txt = (clip.post_text || "").toLowerCase();
+  if (k.min_sec != null || k.max_sec != null) {
+    const ok = (k.min_sec == null || len >= k.min_sec) && (k.max_sec == null || len <= k.max_sec);
+    out.push([ok ? "p" : "f", `Length ${len.toFixed(1)} s (brief: ${k.min_sec ?? "any"}-${k.max_sec ?? "any"} s)`]);
+  }
+  if (k.deadline) {
+    const left = (new Date(k.deadline + "T23:59:59") - new Date()) / 864e5;
+    out.push([left >= 0 ? "p" : "f", left >= 0 ? `Deadline ${k.deadline} (${Math.floor(left)} days left)` : `Deadline ${k.deadline} has passed`]);
+  }
+  for (const t of words(k.hashtags)) out.push([txt.includes(t.toLowerCase()) ? "p" : "f", `Post text has ${t}`]);
+  for (const m of words(k.mentions)) out.push([txt.includes(m.toLowerCase()) ? "p" : "f", `Post text mentions ${m}`]);
+  if (k.phrase) out.push([txt.includes(k.phrase.toLowerCase()) ? "p" : "f", `Post text has "${k.phrase}"`]);
+  if (k.credit) out.push([txt.includes(k.credit.toLowerCase()) ? "p" : "f", "Credit line included"]);
+  if (k.platforms) out.push(["u", `Post only on: ${k.platforms}`]);
+  out.push(["u", "Watched the whole clip: captions, framing and audio are right"]);
+  return out;
+}
+
+// ---------- job view ----------
+async function openJob(id) {
+  currentJob = id; srcLoaded = null; jobData = null;
+  show("job"); currentJob = id; renderJobList();
+  $("cands").dataset.sig = ""; $("clips").dataset.sig = "";
+  clearTimeout(pollTimer);
+  await refreshJob(true);
+}
+async function refreshJob(first = false) {
+  if (!currentJob) return;
+  let j;
+  try { j = await api("/api/jobs/" + currentJob); } catch (e) { return; }
+  if (j.id !== currentJob) return;
+  jobData = j;
+  if (first) fillCampaign();
+  const m = j.meta || {};
+  $("jTitle").textContent = m.title || j.input;
+  $("jMeta").innerHTML = [m.channel && esc(m.channel), m.license && "License: " + esc(m.license),
+    j.duration && "Length: " + fmt(j.duration), m.heatmap && "has YouTube 'most replayed' data",
+    m.webpage_url && `<a href="${esc(m.webpage_url)}" target="_blank">source</a>`].filter(Boolean).join(" · ");
+  const running = j.status === "running" || j.status === "queued";
+  $("jStage").innerHTML = running ? esc(j.stage) + (j.progress > 0 && j.progress < 1 ? ` — ${Math.round(j.progress * 100)}%` : "")
+    : j.status === "ready" ? `<span class="okc">Ready for review</span>` : "";
+  $("jBarWrap").classList.toggle("hide", !running);
+  $("jBar").style.width = Math.round((j.progress || 0) * 100) + "%";
+  $("jErr").textContent = j.error ? "Error: " + j.error : "";
+  $("jWarn").textContent = j.warning || "";
+
+  if (j.source && srcLoaded !== j.id) { $("player").src = `/api/jobs/${j.id}/source`; srcLoaded = j.id; }
+  $("playerPanel").classList.toggle("hide", !j.source);
+
+  const hasCands = j.status === "ready" || (j.candidates && j.candidates.length);
+  $("candWrap").classList.toggle("hide", !hasCands);
+  $("method").textContent = (j.pick_method === "ai" ? "(picked and ranked by AI)" : j.pick_method === "basic" ? "(basic picker, no AI)" : "")
+    + (j.pick_note ? " · " + j.pick_note : "");
+  $("repickBtn").disabled = running;
+  const sig = JSON.stringify(j.candidates);
+  if ($("cands").dataset.sig !== sig) {
+    $("cands").dataset.sig = sig;
+    $("cands").innerHTML = (j.candidates || []).map((c, i) => {
+      const sub = c.sub ? `<div class="subs">Hook <b>${c.sub.hook_score}</b>/25 · Engagement <b>${c.sub.engagement}</b>/25 · Value <b>${c.sub.value}</b>/25 · Shareable <b>${c.sub.shareability}</b>/25${c.ai_rank ? ` · AI rank <b>#${c.ai_rank}</b>` : ""}</div>` : "";
+      return `
+      <div class="panel cand">
+        <div class="score">${Math.round(c.score)}<small>score</small></div>
+        <div>
+          <div class="row"><div class="grow"><label style="margin-top:0">Hook title (shown on the clip)</label>
+            <input type="text" id="ti${i}" value="${esc(c.hook_title || "")}"></div></div>
+          ${sub}
+          ${c.hook ? `<div><b>Opens with:</b> “${esc(c.hook)}”</div>` : ""}
+          <div class="muted" style="font-size:13px">${esc(c.reason)}</div>
+          <details style="margin-top:6px"><summary>Transcript and post text</summary>
+            <div class="muted" style="font-size:13px;margin:6px 0">${esc(c.text || "")}</div>
+            <label>Post text (title, caption, hashtags)</label><textarea id="pt${i}">${esc(postTextFor(c))}</textarea>
+          </details>
+          <div class="row" style="margin-top:8px">
+            <div><label>Start (s)</label><input type="number" step="0.1" value="${c.start}" id="st${i}"></div>
+            <div><label>End (s)</label><input type="number" step="0.1" value="${c.end}" id="en${i}"></div>
+            <span class="muted" id="len${i}" style="padding-bottom:9px">${fmt(c.start)} → ${fmt(c.end)} (${(c.end - c.start).toFixed(1)} s)</span>
+            <button class="btn sec" data-prev="${i}">Preview</button>
+            <button class="btn" data-make="${i}">Make clip</button>
+          </div>
+        </div>
+      </div>`; }).join("");
+    document.querySelectorAll("[data-prev]").forEach(b => b.onclick = () => preview(+$("st" + b.dataset.prev).value, +$("en" + b.dataset.prev).value));
+    document.querySelectorAll("[data-make]").forEach(b => b.onclick = () => { const i = b.dataset.make;
+      make(+$("st" + i).value, +$("en" + i).value, $("ti" + i).value, $("pt" + i).value); });
+    document.querySelectorAll("#cands input[type=number]").forEach(inp => inp.oninput = () => {
+      const i = inp.id.replace(/\D/g, ""), s = +$("st" + i).value, e = +$("en" + i).value;
+      $("len" + i).textContent = `${fmt(s)} → ${fmt(e)} (${(e - s).toFixed(1)} s)`;
+    });
+  }
+
+  const clips = j.clips || [];
+  $("clipWrap").classList.toggle("hide", !clips.length);
+  const csig = JSON.stringify(clips.map(c => [c.n, c.status, c.stage, c.post_text])) + JSON.stringify(camp());
+  if ($("clips").dataset.sig !== csig && !document.activeElement?.id?.startsWith("cp_")) {
+    $("clips").dataset.sig = csig;
+    $("clips").innerHTML = clips.slice().reverse().map(c => {
+      const share = c.info && c.info.layout_share ? Object.entries(c.info.layout_share).map(([k, v]) => `${k} ${Math.round(v * 100)}%`).join(" · ") : "";
+      const body = c.status === "done"
+        ? `<video controls preload="metadata" src="/api/jobs/${j.id}/clips/${esc(c.file)}?v=${c.created}"></video>
+           <div><a href="/api/jobs/${j.id}/clips/${esc(c.file)}" download>${esc(c.file)}</a> <span class="muted" style="font-size:12px">${esc(share)}</span></div>
+           <label>Post text</label><textarea id="cp_${c.n}">${esc(c.post_text || "")}</textarea>
+           <div class="row" style="margin-top:6px"><button class="btn sec small" data-copy="${c.n}">Copy</button>
+             <button class="btn sec small" data-save="${c.n}">Save</button></div>
+           <ul class="checks">${checklist(c).map(([k, t]) => `<li class="${k}">${k === "p" ? "✓" : k === "f" ? "✗" : "?"} ${esc(t)}</li>`).join("")}</ul>`
+        : c.status === "error" ? `<div class="err">Render failed: ${esc(c.error)}</div>`
+        : `<div class="muted" style="aspect-ratio:9/16;display:grid;place-items:center;background:#0d0f12;border-radius:8px;text-align:center;padding:10px">${esc(c.stage || "Rendering…")}</div>`;
+      return `<div class="clip">${body}<div class="muted" style="font-size:12px">#${c.n} ${esc(c.hook_title || c.label || "")} · ${fmt(c.start)}–${fmt(c.end)} · ${esc(c.layout)} / ${esc(c.preset)}</div></div>`;
+    }).join("");
+    document.querySelectorAll("[data-copy]").forEach(b => b.onclick = async () => {
+      try { await navigator.clipboard.writeText($("cp_" + b.dataset.copy).value); b.textContent = "Copied"; } catch { b.textContent = "Select and copy"; } });
+    document.querySelectorAll("[data-save]").forEach(b => b.onclick = async () => {
+      await api(`/api/jobs/${currentJob}/clips/${b.dataset.save}/post`, { method: "POST", body: JSON.stringify({ text: $("cp_" + b.dataset.save).value }) });
+      b.textContent = "Saved"; $("clips").dataset.sig = ""; refreshJob(); });
+  }
+
+  const busy = running || clips.some(c => c.status === "rendering");
+  if (busy) pollTimer = setTimeout(refreshJob, 2000);
+  if (!running) loadJobs();
+}
+function preview(s, e) {
+  const p = $("player"); stopAt = e; p.currentTime = s; p.play();
+  p.scrollIntoView({ behavior: "smooth", block: "center" });
+}
+$("player").ontimeupdate = () => { const p = $("player"); if (stopAt != null && p.currentTime >= stopAt) { p.pause(); stopAt = null; } };
+$("player").onseeking = () => { if (stopAt != null && $("player").currentTime > stopAt) stopAt = null; };
+async function make(s, e, title, postText) {
+  const body = { start: s, end: e, label: title || "", layout: $("oLayout").value, preset: $("oPreset").value, position: $("oPos").value,
+    captions: $("oCaps").checked, hook_title: $("oHook").checked ? (title || "") : "", post_text: postText || "" };
+  try { await api(`/api/jobs/${currentJob}/render`, { method: "POST", body: JSON.stringify(body) }); }
+  catch (err) { $("jErr").textContent = err.message; return; }
+  clearTimeout(pollTimer); refreshJob();
+  $("clipWrap").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+$("cPrev").onclick = () => preview(+$("cStart").value, +$("cEnd").value);
+$("cMake").onclick = () => make(+$("cStart").value, +$("cEnd").value, $("cTitle").value, postTextFor({}));
+$("repickBtn").onclick = async () => {
+  try { await api(`/api/jobs/${currentJob}/repick`, { method: "POST" }); } catch (e) { $("jErr").textContent = e.message; return; }
+  clearTimeout(pollTimer); setTimeout(refreshJob, 500);
+};
+$("openFolder").onclick = () => api(`/api/jobs/${currentJob}/open-folder`, { method: "POST" });
+$("jDelete").onclick = () => askDelete(currentJob, $("jDelete"), "Delete job");
+
+// ---------- settings: saved AI providers ----------
+const HELP = {
+  gemini: 'Free key: <a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com/apikey</a> → "Create API key". Free Flash models allow about 20 requests a day each, Flash Lite about 500. Keep 2-3 models in the list so B3 Clips can fall back; Google retires old names, so use "List available models".',
+  nvidia: 'Free key: <a href="https://build.nvidia.com" target="_blank">build.nvidia.com</a> (NVIDIA developer account) → "Get API Key" (starts with nvapi-). About 40 requests a minute. Paste the key, click "List available models" and pick 1-2 large models (70B or bigger pick moments better).',
+  groq: 'Free key: <a href="https://console.groq.com/keys" target="_blank">console.groq.com/keys</a>. Fast; limited requests and tokens per day.',
+  openrouter: 'Key: <a href="https://openrouter.ai/keys" target="_blank">openrouter.ai/keys</a>. Free models end in ":free" (about 50 requests a day without credit).',
+  ollama: 'Local and free: install <a href="https://ollama.com" target="_blank">ollama.com</a>, run <code>ollama pull qwen2.5:7b</code>. No key. Slow on CPU; small models pick worse.',
+  custom: "Any server with an OpenAI-compatible /chat/completions endpoint (LM Studio, vLLM, etc.).",
+};
+let templates = {}, editingId = null;
+async function loadSettings() {
+  const d = await api("/api/settings"); templates = d.templates; settings = d.settings;
+  $("pfType").innerHTML = Object.entries(templates).map(([k, t]) => `<option value="${k}">${esc(t.label)}</option>`).join("");
+  renderSettings();
+}
+function applySettings(d) { settings = d.settings; renderSettings(); }
+function renderSettings() {
+  const s = settings;
+  $("sFallback").checked = !!s.fallback;
+  $("sWhisper").value = s.whisper_model; $("sMin").value = s.min_len; $("sMaxLen").value = s.max_len;
+  if (![...$("sMax").options].some(o => +o.value === +s.max_candidates))
+    $("sMax").insertAdjacentHTML("beforeend", `<option value="${+s.max_candidates}">${+s.max_candidates}</option>`);
+  $("sMax").value = String(+s.max_candidates); $("sScore").value = s.min_score ?? 55;
+  $("sScoreWrap").classList.toggle("hide", +s.max_candidates !== 0);
+  const card = p => `
+    <div class="panel" style="margin-bottom:8px;${p.id === s.active ? "border-color:var(--accent)" : ""}">
+      <div class="row" style="justify-content:space-between;align-items:center">
+        <div><b>${esc(p.name)}</b> ${p.id === s.active ? '<span class="okc" style="font-size:13px">● active</span>' : ""}
+          <div class="muted" style="font-size:12px">${esc((templates[p.type] || {}).label || p.type)} · ${esc(p.model)} · key ${p.api_key_set ? "saved" : "none"}</div>
+          <div id="pt_${p.id}" style="font-size:12px"></div></div>
+        <div class="row" style="gap:6px">
+          ${p.id === s.active ? "" : `<button class="btn small" data-use="${p.id}">Use</button>`}
+          <button class="btn sec small" data-test="${p.id}">Test</button>
+          <button class="btn sec small" data-edit="${p.id}">Edit</button>
+          <button class="btn sec small" data-del="${p.id}">Delete</button>
+        </div>
+      </div>
+    </div>`;
+  $("provList").innerHTML = (s.providers.map(card).join("") || `<div class="muted">No providers yet. Click "+ Add provider".</div>`) +
+    `<div class="muted" style="font-size:13px">${s.active === "none" ? '<span class="okc">● No AI is active</span>: basic picker (loud, fast, exciting parts).'
+      : '<a href="#" id="useNone">Switch to no AI (basic picker)</a>'}</div>`;
+  document.querySelectorAll("[data-use]").forEach(b => b.onclick = () => activate(b.dataset.use));
+  document.querySelectorAll("[data-edit]").forEach(b => b.onclick = () => openForm(s.providers.find(p => p.id === b.dataset.edit)));
+  document.querySelectorAll("[data-del]").forEach(b => b.onclick = async () => {
+    const p = s.providers.find(x => x.id === b.dataset.del);
+    if (b.dataset.sure !== "1") { b.dataset.sure = "1"; b.textContent = "Click again to delete"; return; }
+    applySettings(await api(`/api/providers/${p.id}`, { method: "DELETE" }));
+  });
+  document.querySelectorAll("[data-test]").forEach(b => b.onclick = async () => {
+    const out = $("pt_" + b.dataset.test); out.textContent = "Testing…";
+    const r = await api(`/api/providers/${b.dataset.test}/test`, { method: "POST" });
+    out.innerHTML = r.ok ? `<span class="okc">Connected (replied: ${esc(r.reply)})</span>` : `<span class="err">${esc(r.error)}</span>`;
+  });
+  const un = $("useNone"); if (un) un.onclick = ev => { ev.preventDefault(); activate("none"); };
+  // quick switchers on the New clip and job pages
+  const opts = s.providers.map(p => `<option value="${p.id}">AI: ${esc(p.name)}</option>`).join("") + `<option value="none">No AI (basic picker)</option>`;
+  document.querySelectorAll(".provSwitch").forEach(sel => { sel.innerHTML = opts; sel.value = s.active; sel.onchange = () => activate(sel.value); });
+}
+async function activate(id) { applySettings(await api(`/api/providers/${id}/activate`, { method: "POST" })); }
+function openForm(p) {
+  editingId = p ? p.id : null;
+  $("provForm").classList.remove("hide");
+  $("pfTitle").textContent = p ? `Edit ${p.name}` : "Add provider";
+  $("pfType").value = p ? p.type : "nvidia";
+  $("pfType").disabled = !!p;
+  $("pfName").value = p ? p.name : templates[$("pfType").value].label;
+  $("pfUrl").value = p ? p.base_url : templates[$("pfType").value].base_url;
+  $("pfModel").value = p ? p.model : templates[$("pfType").value].model;
+  $("pfKey").value = ""; $("pfClear").checked = false;
+  $("pfKeyState").textContent = p ? (p.api_key_set ? "(a key is saved: leave empty to keep it)" : "(none saved)") : "";
+  $("pfClearWrap").classList.toggle("hide", !(p && p.api_key_set));
+  $("pfHelp").innerHTML = HELP[$("pfType").value] || ""; $("pfModels").textContent = ""; $("pfMsg").textContent = "";
+  $("provForm").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+$("addProv").onclick = () => openForm(null);
+$("pfCancel").onclick = () => $("provForm").classList.add("hide");
+$("pfType").onchange = () => { const t = templates[$("pfType").value];
+  $("pfName").value = t.label; $("pfUrl").value = t.base_url; $("pfModel").value = t.model; $("pfHelp").innerHTML = HELP[$("pfType").value] || ""; };
+$("pfList").onclick = async () => {
+  $("pfModels").textContent = "Loading…";
+  const r = await api("/api/providers/models", { method: "POST", body: JSON.stringify({ base_url: $("pfUrl").value.trim(), api_key: $("pfKey").value || null, id: editingId }) });
+  if (!r.ok) { $("pfModels").innerHTML = `<span class="err">${esc(r.error)}</span>`; return; }
+  $("pfModels").innerHTML = "Click a model to add it: " + r.models.map(m => `<a href="#" data-m="${esc(m)}">${esc(m)}</a>`).join(", ");
+  document.querySelectorAll("[data-m]").forEach(a => a.onclick = ev => { ev.preventDefault();
+    const cur = words($("pfModel").value.replace(/,/g, " ")); if (!cur.includes(a.dataset.m)) cur.push(a.dataset.m); $("pfModel").value = cur.join(", "); });
+};
+$("pfSave").onclick = async () => {
+  $("pfMsg").textContent = "Saving and testing…";
+  try {
+    const d = await api("/api/providers", { method: "POST", body: JSON.stringify({ id: editingId, name: $("pfName").value, type: $("pfType").value,
+      base_url: $("pfUrl").value.trim(), model: $("pfModel").value.trim(), api_key: $("pfKey").value || null, clear_key: $("pfClear").checked }) });
+    applySettings(d);
+    const r = await api(`/api/providers/${d.saved_id}/test`, { method: "POST" });
+    $("pfMsg").innerHTML = r.ok ? '<span class="okc">Saved. Connection works.</span>' : `<span class="warn">Saved, but the test failed: ${esc(r.error)}</span>`;
+    if (r.ok) setTimeout(() => $("provForm").classList.add("hide"), 1200);
+  } catch (e) { $("pfMsg").innerHTML = `<span class="err">${esc(e.message)}</span>`; }
+};
+$("sFallback").onchange = () => saveGeneral();
+$("sMax").onchange = () => $("sScoreWrap").classList.toggle("hide", +$("sMax").value !== 0);
+async function saveGeneral() {
+  const body = { fallback: $("sFallback").checked, whisper_model: $("sWhisper").value,
+    max_candidates: +$("sMax").value, min_score: +$("sScore").value || 55, min_len: +$("sMin").value, max_len: +$("sMaxLen").value };
+  applySettings(await api("/api/settings", { method: "POST", body: JSON.stringify(body) }));
+}
+$("saveBtn").onclick = async () => {
+  $("sMsg").textContent = "";
+  try { await saveGeneral(); $("sMsg").innerHTML = '<span class="okc">Saved</span>'; }
+  catch (e) { $("sMsg").innerHTML = `<span class="err">${esc(e.message)}</span>`; }
+};
+
+// ---------- app lifecycle ----------
+// The server stops itself a few minutes after the last heartbeat (window closed), once nothing is processing.
+const beat = () => fetch("/api/heartbeat", { method: "POST" }).catch(() => {});
+beat(); setInterval(beat, 10000);
+$("quitBtn").onclick = async () => {
+  const force = $("quitBtn").dataset.force === "1";
+  let r;
+  try { r = await api("/api/quit", { method: "POST", body: JSON.stringify({ force }) }); } catch { r = { ok: true }; }
+  if (!r.ok && r.busy) {
+    $("quitBtn").dataset.force = "1"; $("quitBtn").textContent = "Quit anyway";
+    $("quitMsg").textContent = "A video is still processing and would be lost.";
+    return;
+  }
+  document.body.innerHTML = `<div style="display:grid;place-items:center;height:100vh;text-align:center;font:16px system-ui;color:#e8eaed;background:#111317">
+    <div><h2 style="margin:0 0 8px">B3 Clips has stopped</h2><div style="color:#9aa0a8">You can close this window. Start it again from the B3 Clips icon.</div></div></div>`;
+};
+
+loadOptions(); loadSettings(); loadJobs();
+</script>
+</body>
+</html>

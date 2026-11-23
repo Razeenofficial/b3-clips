@@ -1,0 +1,9 @@
+# Clipper Python packages (versions tested on PC 1, Python 3.14, 2026-11-22)
+yt-dlp==2026.10.26
+faster-whisper==1.2.1
+fastapi==0.162.3
+uvicorn[standard]==0.54.0
+httpx==0.28.1
+python-multipart==0.0.33
+opencv-python-headless==5.1.0.95
+numpy==2.5.4

@@ -1,0 +1,35 @@
+# ---- private: never commit ----
+# API keys for your AI providers
+settings.json
+# downloaded videos, transcripts and rendered clips
+jobs/
+clips/
+work/
+# logs and build output
+logs/
+dist/
+# personal notes and AI-assistant files
+memory/
+CLAUDE.md
+.claude/
+reference/
+
+# ---- generated ----
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.mp4
+*.mkv
+*.webm
+*.m4a
+*.wav
+*.mp3
+*.ass
+
+# ---- OS / editor ----
+Thumbs.db
+desktop.ini
+.DS_Store
+.vscode/
+.idea/
